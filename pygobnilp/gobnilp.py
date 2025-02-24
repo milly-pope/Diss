@@ -58,7 +58,7 @@ try:
     from .scoring import (
         DiscreteData, ContinuousData,
         BDeu, BGe,
-        DiscreteLL, DiscreteBIC, DiscreteAIC,
+        DiscreteLL, DiscreteBIC, DiscreteEBIC,DiscreteAIC,
         GaussianLL, GaussianBIC, GaussianAIC, GaussianL0)
 except ImportError as e:
     print("Could not import score generating code!")
@@ -1065,8 +1065,8 @@ class Gobnilp(Model):
 
         self._known_local_scores = frozenset([
             'BDeu','BGe',
-            'DiscreteLL', 'DiscreteBIC', 'DiscreteAIC',
-            'GaussianLL', 'GaussianBIC', 'GaussianAIC', 'GaussianL0'])
+            'DiscreteLL', 'DiscreteBIC', 'DiscreteEBIC','DiscreteAIC',
+            'GaussianLL', 'GaussianBIC', 'GuassianEBIC','GaussianAIC', 'GaussianL0'])
 
     def _getmipvars(self,vtype):
         try:

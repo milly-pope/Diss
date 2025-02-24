@@ -854,6 +854,19 @@ class DiscreteBIC(AbsDiscreteLLScore):
         fn = 0.5 * log(self._data_length)  # Carvalho notation
         self._child_penalties = {v:k*fn*(self.arity(v)-1) for v in self._variables}
 
+class DiscreteEBIC(DiscreteBIC):
+
+    def __init__(self,data,k=1,gamma=0.5):
+        ''' Initialises a 'DiscreteEBIC' object, inherits from DiscreteBIC
+
+        Args :
+        data , k with default value 1, gamma tuning paremater defult is 0.5
+        '''
+        super().__init__(data,k)
+        fn = 0.5 *log(self._data_length)
+        p = len(self._variables)
+        self._child_penalties = {v: (k * fn * self.arity(v) - 1) + 2*gamma*(self.arity(v)-1)*log(p) for v in self._variables}
+
 
 class DiscreteAIC(AbsDiscreteLLScore):
 
@@ -946,10 +959,10 @@ class GaussianBIC(AbsGaussianLLScore):
         _AbsLLPenalised.__init__(self,data)
         self._fn = k * 0.5 * log(self._data_length)  # Carvalho notation
         self._sdresidparam = sdresidparam
-        
+
     def score(self,child,parents):
         '''
-        Return the fitted Gaussian BIC score for `child` having `parents`, 
+        Return the fitted Gaussian BIC score for `child` having `parents`,
         and also upper bound on the score for proper supersets of `parents`.
 
         Args:
@@ -957,13 +970,32 @@ class GaussianBIC(AbsGaussianLLScore):
          parents (iter): The parent variables
 
         Returns:
-         tuple: The Gaussian BIC local score for the given family and an upper bound on the local score 
+         tuple: The Gaussian BIC local score for the given family and an upper bound on the local score
          for proper supersets of `parents`
         '''
         this_ll_score, numparams = self.ll_score(child,parents)
         if self._sdresidparam:
             numparams += 1
         return this_ll_score - self._fn * numparams, self._maxllh[child] - self._fn * (numparams+1)
+
+class GaussianEBIC(GaussianBIC):
+
+    def __init__(self,data,k=1, gamma=0.5, sdresidparam=True):
+
+        super().__init__(data,k, sdresidparam)
+        self._num_vars = self._p
+        self._gamma = gamma
+        self._ebic_penalty = 0
+        for v in range(self._num_vars):
+            self._ebic_penalty += -2*self._gamma * log(self._num_vars)
+
+    def score(self,child,parents):
+
+        this_ll_score, numparams = self.ll_score(child, parents)
+
+        if self._sdresidparam:
+            numparams += 1
+        return this_ll_score - self._fn * numparams + self._ebic_penalty * numparams, self._maxllh[child] - self._fn * (numparams + 1) + self._ebic_penalty * (numparams+1)
 
 class GaussianAIC(AbsGaussianLLScore):
 
