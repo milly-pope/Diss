@@ -850,6 +850,7 @@ class DiscreteBIC(AbsDiscreteLLScore):
          data (DiscreteData): data
          k (float): Multiply standard BIC penalty by this amount, so increase for sparser networks
         '''
+
         _AbsLLPenalised.__init__(self,data)
         fn = 0.5 * log(self._data_length)  # Carvalho notation
         self._child_penalties = {v:k*fn*(self.arity(v)-1) for v in self._variables}
@@ -862,6 +863,7 @@ class DiscreteEBIC(DiscreteBIC):
         Args :
         data , k with default value 1, gamma tuning paremater defult is 0.5
         '''
+
         super().__init__(data,k)
         fn = 0.5 *log(self._data_length)
         p = len(self._variables)
@@ -980,7 +982,7 @@ class GaussianBIC(AbsGaussianLLScore):
 
 class GaussianEBIC(GaussianBIC):
 
-    def __init__(self,data,k=1, gamma=0.5, sdresidparam=True):
+    def __init__(self,data,k=1, sdresidparam=True, gamma = 0.5):
 
         super().__init__(data,k, sdresidparam)
         self._num_vars = self._p

@@ -24,7 +24,7 @@ __email__ = "james.cussens@york.ac.uk"
 
 from itertools import combinations, permutations
 import sys
-from math import log
+from math import log, gamma
 import warnings
 import subprocess
 import importlib
@@ -58,8 +58,8 @@ try:
     from .scoring import (
         DiscreteData, ContinuousData,
         BDeu, BGe,
-        DiscreteLL, DiscreteBIC, DiscreteEBIC,DiscreteAIC,
-        GaussianLL, GaussianBIC, GaussianAIC, GaussianL0)
+        DiscreteLL, DiscreteBIC, DiscreteEBIC, DiscreteAIC,
+        GaussianLL, GaussianBIC, GaussianAIC, GaussianL0, GaussianEBIC)
 except ImportError as e:
     print("Could not import score generating code!")
     print(e)
@@ -1066,7 +1066,7 @@ class Gobnilp(Model):
         self._known_local_scores = frozenset([
             'BDeu','BGe',
             'DiscreteLL', 'DiscreteBIC', 'DiscreteEBIC','DiscreteAIC',
-            'GaussianLL', 'GaussianBIC', 'GuassianEBIC','GaussianAIC', 'GaussianL0'])
+            'GaussianLL', 'GaussianBIC', 'GaussianEBIC','GaussianAIC', 'GaussianL0'])
 
     def _getmipvars(self,vtype):
         try:
@@ -3657,7 +3657,7 @@ class Gobnilp(Model):
               header=True, comments='#', delimiter=None,
               start='no data', end='output written', data_type='discrete',
               score='BDeu', local_score_fun=None,
-              k=1, sdresidparam=True,standardise=False,
+              k=1, sdresidparam=True,gamma = 0.5,standardise=False,
               arities = None, palim=3,
               alpha=1.0, nu=None, alpha_mu=1.0, alpha_omega=None,
               starts=(),local_scores_source=None,
@@ -3820,9 +3820,13 @@ class Gobnilp(Model):
                     local_score_fun_temp = BDeu(self._data,alpha=alpha).bdeu_score
                 elif score == 'BGe':
                     local_score_fun_temp = BGe(self._data, nu=nu, alpha_mu=alpha_mu, alpha_omega=alpha_omega).bge_score
+                elif score == 'DiscreteEBIC':
+                    local_score_fun_temp = DiscreteEBIC(self._data, k=k, gamma=gamma).score
+                elif score == 'GaussianEBIC':
+                    local_score_fun_temp = GaussianEBIC(self._data, k=k, sdresidparam=sdresidparam, gamma=gamma).score
                 else:
                     klass = globals()[score]
-                    if score in frozenset(["DiscreteBIC", "DiscreteAIC","GaussianL0"]):
+                    if score in frozenset(["DiscreteBIC","DiscreteAIC","GaussianL0"]):
                         local_score_fun_temp = klass(self._data,k=k).score
                     elif score in frozenset(["GaussianBIC", "GaussianAIC"]):
                         local_score_fun_temp = klass(self._data,k=k,sdresidparam=sdresidparam).score
