@@ -39,7 +39,7 @@ parser.add_argument("--end", default="output written",
 parser.add_argument("--score", default="BDeu",
                     help="""Name of scoring function used for computing local scores. Must be one
                     of the following: BDeu, BGe, DiscreteLL,
-                    DiscreteBIC, DiscreteAIC, GaussianLL, GaussianBIC,
+                    DiscreteBIC, DiscreteEBIC, DiscreteAIC, GaussianLL, GaussianBIC, GaussianEBIC,
                     GaussianAIC, GaussianL0.""")
 parser.add_argument("--k", default=1,type=float,
                     help="""Penalty multiplier for penalised log-likelihood scores (eg BIC, AIC) or tuning parameter ('lambda^2) for l_0
@@ -50,6 +50,8 @@ parser.add_argument("--palim", "-p", type=int, default=3,
                     help="Maximum size of parent sets.")
 parser.add_argument("--alpha", type=float, default=1.0,
                     help="The equivalent sample size for BDeu local score generation.")
+parser.add_argument("--gamma", type=float, default=0.5,
+                    help="Scaling parameter used for EBIC score, gamma=0 gives traditional BIC score. Default is 0.5")
 parser.add_argument("--alpha_mu", type=float, default=1.0,
                     help="Imaginary sample size value for the Normal part of the normal-Wishart prior for BGe scoring.")
 parser.add_argument("--alpha_omega", type=int, default=None,
