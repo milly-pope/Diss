@@ -865,9 +865,27 @@ class DiscreteEBIC(DiscreteBIC):
         '''
 
         super().__init__(data,k)
+        self._gamma = gamma
         fn = 0.5 *log(self._data_length)
-        p = len(self._variables)
-        self._child_penalties = {v: (k * fn * self.arity(v) - 1) + 2*gamma*(self.arity(v)-1)*log(p) for v in self._variables}
+        self._child_penalties = { v: (k * fn * (self.arity(v) - 1) ) for v in self._variables}
+
+
+    def score(self,child,parents):
+
+        this_ll_score, numinsts = self.ll_score(child, parents)
+        if numinsts is None:
+            raise ValueError('Too many joint instantiations of parents {0} to compute penalty'.format(parents))
+        penalty = numinsts * self._child_penalties[child]
+        # Extra EBIC penalty term 4*gamma*no.parents*log(n)
+        num_parents = len(parents)
+        print("node:",child,"number of parents:", num_parents)
+        ebic_extra_penalty = 4 * self._gamma * num_parents * log(self._data_length)
+        total_penalty = penalty + ebic_extra_penalty
+
+
+        # number of parent insts will at least double if any added
+        return this_ll_score - total_penalty, self._maxllh[child] - (penalty * 2)
+
 
 
 class DiscreteAIC(AbsDiscreteLLScore):
