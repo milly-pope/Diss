@@ -863,7 +863,6 @@ class DiscreteEBIC(DiscreteBIC):
         Args :
         data , k with default value 1, gamma tuning paremater defult is 0.5
         '''
-
         super().__init__(data,k)
         self._gamma = gamma
         fn = 0.5 *log(self._data_length)
@@ -878,14 +877,10 @@ class DiscreteEBIC(DiscreteBIC):
         penalty = numinsts * self._child_penalties[child]
         # Extra EBIC penalty term 4*gamma*no.parents*log(n)
         num_parents = len(parents)
-        ebic_extra_penalty = 4 * self._gamma * num_parents * log(self._data_length)
+        ebic_extra_penalty = 4 * self._gamma * num_parents * log(len(self._variables))
         total_penalty = penalty + ebic_extra_penalty
 
-        '''
-        print("total penalty:", total_penalty, "bic pen", penalty, "extra pen", ebic_extra_penalty)
-        print("score", this_ll_score - total_penalty, "logliklihood", this_ll_score)
-        print("numinsts", numinsts)
-        '''
+
         # number of parent insts will at least double if any added
         return this_ll_score - total_penalty, self._maxllh[child] - (penalty * 2)
 
@@ -1013,17 +1008,13 @@ class GaussianEBIC(GaussianBIC):
 
         this_ll_score, numparams = self.ll_score(child, parents)
         num_parents = len(set(parents))
-        ebic_penalty = 4 * self._gamma * num_parents * log(self._data_length)
-        bic_penalty = self._fn * numparams
+        ebic_penalty = 4 * self._gamma * num_parents * log(len(self._variables))
 
         if self._sdresidparam:
             numparams += 1
 
         final_score = this_ll_score - self._fn * numparams + ebic_penalty
-        print("no.parents for node", child, ":", num_parents, "score:", final_score)
-        print("loglik:",this_ll_score,"bic penalty", bic_penalty)
-        print("ebic extra pen", ebic_penalty, "numparams", numparams, "self._fn", self._fn)
-        print("----------------------------------------------------------------")
+
         return final_score, self._maxllh[child] - self._fn * (numparams+1)
 
 class GaussianAIC(AbsGaussianLLScore):
