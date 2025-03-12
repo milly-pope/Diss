@@ -878,11 +878,14 @@ class DiscreteEBIC(DiscreteBIC):
         penalty = numinsts * self._child_penalties[child]
         # Extra EBIC penalty term 4*gamma*no.parents*log(n)
         num_parents = len(parents)
-        print("node:",child,"number of parents:", num_parents)
         ebic_extra_penalty = 4 * self._gamma * num_parents * log(self._data_length)
         total_penalty = penalty + ebic_extra_penalty
 
-
+        '''
+        print("total penalty:", total_penalty, "bic pen", penalty, "extra pen", ebic_extra_penalty)
+        print("score", this_ll_score - total_penalty, "logliklihood", this_ll_score)
+        print("numinsts", numinsts)
+        '''
         # number of parent insts will at least double if any added
         return this_ll_score - total_penalty, self._maxllh[child] - (penalty * 2)
 
@@ -1005,17 +1008,23 @@ class GaussianEBIC(GaussianBIC):
         super().__init__(data,k, sdresidparam)
         self._num_vars = self._p
         self._gamma = gamma
-        self._ebic_penalty = 0
-        for v in range(self._num_vars):
-            self._ebic_penalty += -2*self._gamma * log(self._num_vars)
 
     def score(self,child,parents):
 
         this_ll_score, numparams = self.ll_score(child, parents)
+        num_parents = len(set(parents))
+        ebic_penalty = 4 * self._gamma * num_parents * log(self._data_length)
+        bic_penalty = self._fn * numparams
 
         if self._sdresidparam:
             numparams += 1
-        return this_ll_score - self._fn * numparams + self._ebic_penalty * numparams, self._maxllh[child] - self._fn * (numparams + 1) + self._ebic_penalty * (numparams+1)
+
+        final_score = this_ll_score - self._fn * numparams + ebic_penalty
+        print("no.parents for node", child, ":", num_parents, "score:", final_score)
+        print("loglik:",this_ll_score,"bic penalty", bic_penalty)
+        print("ebic extra pen", ebic_penalty, "numparams", numparams, "self._fn", self._fn)
+        print("----------------------------------------------------------------")
+        return final_score, self._maxllh[child] - self._fn * (numparams+1)
 
 class GaussianAIC(AbsGaussianLLScore):
 
