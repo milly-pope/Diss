@@ -24,7 +24,7 @@ __email__ = "james.cussens@york.ac.uk"
 
 from itertools import combinations, permutations
 import sys
-from math import log, gamma
+from math import log
 import warnings
 import subprocess
 import importlib
@@ -59,7 +59,7 @@ try:
         DiscreteData, ContinuousData,
         BDeu, BGe,
         DiscreteLL, DiscreteBIC, DiscreteEBIC, DiscreteAIC,
-        GaussianLL, GaussianBIC, GaussianAIC, GaussianL0, GaussianEBIC)
+        GaussianLL, GaussianBIC,GaussianEBIC, GaussianAIC, GaussianL0)
 except ImportError as e:
     print("Could not import score generating code!")
     print(e)
@@ -458,10 +458,16 @@ class BN(nx.DiGraph):
         This method uses the "semi-naive evaluation" algorithm for computing 
         the relevant least Herbrand model, which is the set of all the compelled edges.
 
+        Raises:
+         ValueError: If the graph is not a DAG
+
         Args:
          compelled (iter): Edges to set as compelled in addition to those involved in
           *immoralities*. 
         '''
+
+        if not nx.is_directed_acyclic_graph(self):
+            raise ValueError('Graph is not a DAG')
 
         new_compelled = list(compelled)
         num_uncompelled_parents = {}
@@ -1065,8 +1071,8 @@ class Gobnilp(Model):
 
         self._known_local_scores = frozenset([
             'BDeu','BGe',
-            'DiscreteLL', 'DiscreteBIC', 'DiscreteEBIC','DiscreteAIC',
-            'GaussianLL', 'GaussianBIC', 'GaussianEBIC','GaussianAIC', 'GaussianL0'])
+            'DiscreteLL', 'DiscreteBIC','DiscreteEBIC', 'DiscreteAIC',
+            'GaussianLL', 'GaussianBIC','GaussianEBIC', 'GaussianAIC', 'GaussianL0'])
 
     def _getmipvars(self,vtype):
         try:
@@ -3222,7 +3228,7 @@ class Gobnilp(Model):
         dom = {}
         found = 0
         for i, solval in enumerate(fv_vals):
-            if solval > 0:
+            if solval > 0.5:
                 child = child_list[i]
                 parentset = parentset_list[i]
                 dom[child] = parentset
@@ -3657,7 +3663,7 @@ class Gobnilp(Model):
               header=True, comments='#', delimiter=None,
               start='no data', end='output written', data_type='discrete',
               score='BDeu', local_score_fun=None,
-              k=1, sdresidparam=True,gamma = 0.5,standardise=False,
+              k=1, sdresidparam=True,standardise=False,gamma = 0.5,
               arities = None, palim=3,
               alpha=1.0, nu=None, alpha_mu=1.0, alpha_omega=None,
               starts=(),local_scores_source=None,
@@ -3812,26 +3818,26 @@ class Gobnilp(Model):
                 user_conss_read = True
             
             self._stage = 'data'
-            
-        if self.between(self._stage,'local scores',end):
-            # no local scores yet, so compute them ...
-            if local_scores_source is None:
-                if score == 'BDeu':
-                    local_score_fun_temp = BDeu(self._data,alpha=alpha).bdeu_score
-                elif score == 'BGe':
-                    local_score_fun_temp = BGe(self._data, nu=nu, alpha_mu=alpha_mu, alpha_omega=alpha_omega).bge_score
-                elif score == 'DiscreteEBIC':
-                    local_score_fun_temp = DiscreteEBIC(self._data, k=k, gamma=gamma).score
-                elif score == 'GaussianEBIC':
-                    local_score_fun_temp = GaussianEBIC(self._data, k=k, sdresidparam=sdresidparam, gamma=gamma).score
-                else:
-                    klass = globals()[score]
-                    if score in frozenset(["DiscreteBIC","DiscreteAIC","GaussianL0"]):
-                        local_score_fun_temp = klass(self._data,k=k).score
-                    elif score in frozenset(["GaussianBIC", "GaussianAIC"]):
-                        local_score_fun_temp = klass(self._data,k=k,sdresidparam=sdresidparam).score
+
+            if self.between(self._stage, 'local scores', end):
+                # no local scores yet, so compute them ...
+                if local_scores_source is None:
+                    if score == 'BDeu':
+                        local_score_fun_temp = BDeu(self._data, alpha=alpha).bdeu_score
+                    elif score == 'BGe':
+                        local_score_fun_temp = BGe(self._data, nu=nu, alpha_mu=alpha_mu,alpha_omega=alpha_omega).bge_score
+                    elif score == 'DiscreteEBIC':
+                        local_score_fun_temp = DiscreteEBIC(self._data, k=k, gamma=gamma).score
+                    elif score == 'GaussianEBIC':
+                        local_score_fun_temp = GaussianEBIC(self._data, k=k, sdresidparam=sdresidparam,gamma=gamma).score
                     else:
-                        local_score_fun_temp = klass(self._data).score
+                        klass = globals()[score]
+                        if score in frozenset(["DiscreteBIC", "DiscreteAIC", "GaussianL0"]):
+                            local_score_fun_temp = klass(self._data, k=k).score
+                        elif score in frozenset(["GaussianBIC", "GaussianAIC"]):
+                            local_score_fun_temp = klass(self._data, k=k, sdresidparam=sdresidparam).score
+                        else:
+                            local_score_fun_temp = klass(self._data).score
 
                 # take any non-zero edge penalty into account
                 # avoid infinite recursion by using fix supplied by Molly Acheson

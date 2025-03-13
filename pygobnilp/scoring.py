@@ -875,7 +875,7 @@ class DiscreteEBIC(DiscreteBIC):
         if numinsts is None:
             raise ValueError('Too many joint instantiations of parents {0} to compute penalty'.format(parents))
         penalty = numinsts * self._child_penalties[child]
-        # Extra EBIC penalty term 4*gamma*no.parents*log(n)
+        # Extra EBIC penalty term
         num_parents = len(parents)
         ebic_extra_penalty = 4 * self._gamma * num_parents * log(len(self._variables))
         total_penalty = penalty + ebic_extra_penalty
@@ -1007,13 +1007,14 @@ class GaussianEBIC(GaussianBIC):
     def score(self,child,parents):
 
         this_ll_score, numparams = self.ll_score(child, parents)
-        num_parents = len(set(parents))
+        num_parents = len(parents)
         ebic_penalty = 4 * self._gamma * num_parents * log(len(self._variables))
+
 
         if self._sdresidparam:
             numparams += 1
 
-        final_score = this_ll_score - self._fn * numparams + ebic_penalty
+        final_score = this_ll_score - (self._fn * numparams + ebic_penalty)
 
         return final_score, self._maxllh[child] - self._fn * (numparams+1)
 
