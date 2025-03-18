@@ -874,15 +874,16 @@ class DiscreteEBIC(DiscreteBIC):
         this_ll_score, numinsts = self.ll_score(child, parents)
         if numinsts is None:
             raise ValueError('Too many joint instantiations of parents {0} to compute penalty'.format(parents))
-        penalty = numinsts * self._child_penalties[child]
+        penalty_bic = numinsts * self._child_penalties[child]
         # Extra EBIC penalty term
         num_parents = len(parents)
         ebic_extra_penalty = 4 * self._gamma * num_parents * log(len(self._variables))
-        total_penalty = penalty + ebic_extra_penalty
+        total_penalty = penalty_bic + ebic_extra_penalty
+        ebic_upper_bound = 4 * self._gamma * (num_parents+1)*log(len(self._variables))
 
 
         # number of parent insts will at least double if any added
-        return this_ll_score - total_penalty, self._maxllh[child] - (penalty * 2)
+        return this_ll_score - total_penalty, self._maxllh[child] - (penalty_bic * 2) - ebic_upper_bound
 
 
 
@@ -1016,7 +1017,7 @@ class GaussianEBIC(GaussianBIC):
 
         final_score = this_ll_score - (self._fn * numparams + ebic_penalty)
 
-        return final_score, self._maxllh[child] - self._fn * (numparams+1)
+        return final_score, self._maxllh[child] - self._fn * (numparams+1) - (4 * self._gamma * (num_parents+1) * log(len(self._variables)))
 
 class GaussianAIC(AbsGaussianLLScore):
 
