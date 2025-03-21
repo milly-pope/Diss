@@ -880,7 +880,10 @@ class DiscreteEBIC(DiscreteBIC):
         ebic_extra_penalty = 4 * self._gamma * num_parents * log(len(self._variables))
         total_penalty = penalty_bic + ebic_extra_penalty
         ebic_upper_bound = 4 * self._gamma * (num_parents+1)*log(len(self._variables))
-
+        print("------------------------------------------------------------------------")
+        print("NODE:", child,"PARENT SET:",parents,"SCORE:", -(this_ll_score-total_penalty))
+        print("Max loglik", self._maxllh[child], "bic penx2", penalty_bic*2,"ebic upper bound", ebic_upper_bound)
+        print("Upper Bound",-(self._maxllh[child] - (penalty_bic * 2) - ebic_upper_bound))
 
         # number of parent insts will at least double if any added
         return this_ll_score - total_penalty, self._maxllh[child] - (penalty_bic * 2) - ebic_upper_bound
