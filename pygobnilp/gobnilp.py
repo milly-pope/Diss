@@ -370,6 +370,8 @@ class BN(nx.DiGraph):
             for ext in exts:
                 g.draw(output_stem+m+ext,prog='dot')
 
+
+
     def bnlearn_modelstring(self):
         '''Return a string representation suitable for bnlearn's "modelstring" function
         

@@ -743,6 +743,12 @@ class AbsDiscreteLLScore(DiscreteData):
         if numinsts is None:
             raise ValueError('Too many joint instantiations of parents {0} to compute penalty'.format(parents))
         penalty = numinsts * self._child_penalties[child]
+        '''
+        print("------------------------------------------------------------------------")
+        print("NODE:", child, "PARENT SET:", parents, "SCORE:", (this_ll_score - penalty))
+        print("Upper Bound Current", (self._maxllh[child] - (penalty * 2) ))
+        print("max LL",self._maxllh[child], "Pemalty*2", (penalty*2))
+        '''
         # number of parent insts will at least double if any added
         return this_ll_score - penalty, self._maxllh[child] - (penalty*2)
 
@@ -880,10 +886,21 @@ class DiscreteEBIC(DiscreteBIC):
         ebic_extra_penalty = 4 * self._gamma * num_parents * log(len(self._variables))
         total_penalty = penalty_bic + ebic_extra_penalty
         ebic_upper_bound = 4 * self._gamma * (num_parents+1)*log(len(self._variables))
+        '''
         print("------------------------------------------------------------------------")
-        print("NODE:", child,"PARENT SET:",parents,"SCORE:", -(this_ll_score-total_penalty))
-        print("Max loglik", self._maxllh[child], "bic penx2", penalty_bic*2,"ebic upper bound", ebic_upper_bound)
-        print("Upper Bound",-(self._maxllh[child] - (penalty_bic * 2) - ebic_upper_bound))
+        print("NODE:", child,"PARENT SET:",parents,"SCORE:", (this_ll_score-total_penalty))
+        print("Upper Bound Current",(self._maxllh[child] - (penalty_bic * 2) - ebic_upper_bound))
+        '''
+        #Calculating conditonal entropy
+        n = self.data_length()
+        '''
+        entropy_joint = n*(self.entropy(list(parents)+[child])[0])
+        entropy_parents = n*(self.entropy(parents)[0])
+        cond_entropy = -(entropy_joint - entropy_parents)
+        entropy_UB = cond_entropy - (penalty_bic*2)- ebic_upper_bound
+        print("Entropy UB", entropy_UB)
+        print("Max_LL", self._maxllh[child])
+        '''
 
         # number of parent insts will at least double if any added
         return this_ll_score - total_penalty, self._maxllh[child] - (penalty_bic * 2) - ebic_upper_bound
