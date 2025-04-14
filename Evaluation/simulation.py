@@ -1,6 +1,6 @@
 from pgmpy.readwrite import BIFReader
 from pgmpy.sampling import BayesianModelSampling
-import pandas as pd
+
 
 def reformat(samples, file):
     samples_new = samples.apply(lambda col: col.astype('category').cat.codes)
@@ -17,12 +17,9 @@ def generate_all_samples(bif_path, output_prefix, sample_sizes, num_files=5):
 
     for size in sample_sizes:
         for i in range(1, num_files + 1):
-            print(f"Generating sample {i} with size {size}...")
             data = sampler.forward_sample(size=size)
             filename = f"{output_prefix}{i}_n{size}"
             reformat(data, filename)
-            print(f"Saved: {filename}")
 
-# Run this with your desired setup
 sample_sizes = [1000, 10000, 50000]
 generate_all_samples('alarm.bif', output_prefix='alarm', sample_sizes=sample_sizes)
