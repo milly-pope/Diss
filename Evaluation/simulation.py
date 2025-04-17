@@ -21,5 +21,5 @@ def generate_all_samples(bif_path, output_prefix, sample_sizes, num_files=5):
             filename = f"{output_prefix}{i}_n{size}"
             reformat(data, filename)
 
-sample_sizes = [1000, 10000, 50000]
+sample_sizes = [5000]
 generate_all_samples('alarm.bif', output_prefix='alarm', sample_sizes=sample_sizes)

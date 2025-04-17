@@ -1,34 +1,90 @@
+from pygobnilp.scoring import DiscreteEBIC, DiscreteBIC, DiscreteLL, DiscreteAIC,GaussianLL, GaussianBIC, GaussianEBIC,GaussianAIC
 from pygobnilp.gobnilp import Gobnilp
-try:
-    from scoring import DiscreteEBIC
-except ImportError as e:
-    print("Could not import score generating code!")
-    print(e)
+from pygobnilp.scoring import DiscreteData, ContinuousData
+import pandas as pd
+
+data_disc = DiscreteData('data/discrete.dat')
+data_cont = ContinuousData('data/gaussian.dat')
+score_chosen = 'GaussianLL'
+# POSSIBLE SCORES FOR ANALYSIS
+scores = {
+    'DiscreteEBIC': DiscreteEBIC(data_disc),
+    'DiscreteAIC': DiscreteAIC(data_disc),
+    'DiscreteBIC': DiscreteBIC(data_disc),
+    'DiscreteLL' : DiscreteLL(data_disc),
+    'GaussianEBIC' : GaussianEBIC(data_cont),
+    'GaussianLL': GaussianLL(data_cont),
+    'GaussianBIC': GaussianBIC(data_cont),
+    'GaussianAIC': GaussianAIC(data_cont)
+}
+
+skore = scores[score_chosen]
+
+results = []
+pruned = []
+
+# Load the local scores using GOBNILP
 m = Gobnilp()
-
-m.learn('data/discrete.dat',score='DiscreteBIC', end='local scores', palim = 6, pruning = False)
-for k, v in m.local_scores.items():
-    print(k)
-    print(v)
-    print()
-
+m.learn(data_source='data/gaussian.dat', data_type='continuous', score=score_chosen , end='local scores', palim=6, pruning=False)
+# Load the pruned and unpruned score dictionaries
+all_scores = m.return_local_scores(skore.score, palim=6, pruning=False)
+kept_scores = m.return_local_scores(skore.score, palim=6, pruning=True)
+# Loop through all nodes
 for node, score_dict in m.local_scores.items():
-    print(f" Node: {node}")
 
-    for parent_set, score in score_dict.items():
-        # Proper supersets: all sets that are strict supersets of this parent set
+    for parent_set in score_dict:
         proper_supersets = [ps for ps in score_dict if parent_set < ps]
+        # Get upper bound by recomputing score using your scoring class
+        score, ub = skore.score(node, tuple(parent_set))
 
-        if not proper_supersets:
-            continue  # skip if there are no supersets (e.g. full set)
+        for superset in proper_supersets:
+            superset_score = score_dict[superset]
+            valid = superset_score <= ub
 
-        # Find the best (max) score among supersets
-        best_superset = max(proper_supersets, key=lambda ps: score_dict[ps])
-        best_superset_score = score_dict[best_superset]
+            results.append({
+                "Node": node,
+                "Parent Set": str(set(parent_set)),
+                "Upper Bound": round(ub, 2),
+                "Superset": str(set(superset)),
+                "Superset Score": round(superset_score, 2),
+                "Valid Bound?": valid
+            })
+    # Identify pruned sets: all - kept
+    pruned_sets = set(all_scores[node].keys()) - set(kept_scores[node].keys())
 
-        print(f"Parent set: {set(parent_set)} | Score: {score:.2f}")
-        print(f" Best superset: {set(best_superset)} | Superset score: {best_superset_score:.2f}")
-        print()
+    for pruned_set in pruned_sets:
+        pruned_tuple = tuple(pruned_set)
+        score, ub = skore.score(node, pruned_tuple)
+        pruned.append({
+            "Node": node,
+            "Pruned Set": str(set(pruned_set)),
+            "Score": round(score, 2),
+            "Upper Bound": round(ub, 2)
+        })
 
-test =  DiscreteEBIC('discrete.dat', 1).score
-print(test)
+df_results = pd.DataFrame(results)
+df_pruned = pd.DataFrame(pruned)
+
+#Evaluation
+
+total_comparisons = len(results)
+invalid_bounds = sum(not r["Valid Bound?"] for r in results)
+total_prunes = len(pruned)
+
+print(f"\nTotal comparisons made: {total_comparisons}")
+print(f"Invalid upper bounds found: {invalid_bounds}")
+#Reduction in search space
+
+total_unpruned = sum(len(v) for v in kept_scores.values())  # From earlier
+total_possible = total_prunes + total_unpruned
+
+prune_percent = round((total_prunes / total_possible) * 100, 2)
+print(f"\nPruning Summary: Number of Prunes {total_prunes}")
+print(f"Total possible sets: {total_possible}")
+print(f"Percentage pruned: {prune_percent}%")
+
+#Tightness of the upper bound
+gap_values = [r["Upper Bound"] - r["Superset Score"] for r in results]
+avg_gap = sum(gap_values) / len(gap_values)
+print(f"Average upper bound gap: {avg_gap:.2f}")
+

@@ -2,13 +2,9 @@ import pandas as pd
 from pygobnilp.gobnilp import Gobnilp
 from pgmpy.readwrite import BIFReader
 import networkx as nx
+import causaldag as cd
 
 
-
-def compute_shd(g1, g2):
-    edges_g1 = set(g1.edges())
-    edges_g2 = set(g2.edges())
-    return len(edges_g1 - edges_g2) + len(edges_g2 - edges_g1)
 
 # Load true network structure
 reader = BIFReader("Evaluation/alarm.bif")
@@ -17,22 +13,26 @@ true_graph = nx.DiGraph()
 true_graph.add_nodes_from(pgmpy_model.nodes())
 true_graph.add_edges_from(pgmpy_model.edges())
 
-sample_sizes = 50000
+#Convert tp causal
+true = cd.DAG.from_nx(true_graph)
+sample_sizes = 5000
 gammas = [0, 0.25, 0.5, 0.75]  # gamma=0 is BIC
 results = []
+print(type(true))  # Should say causaldag.DAG
 
 
 for i in range(1, 6):
-    datapath = f"Evaluation/alarm{i}_n50000"
+    datapath = f"Evaluation/alarm{i}_n5000"
     for gamma in gammas:
         g = Gobnilp()
         g.learn(data_source=datapath, score='DiscreteEBIC', gamma=gamma)
         learned_bn = g.learned_bn
-        shd = compute_shd(learned_bn, true_graph)
+        learned = cd.DAG.from_nx(learned_bn)
+        shd = true.shd(learned)
 
         results.append({
             "Sample": i,
-            "Size": 50000,
+            "Size": 5000,
             "Gamma": gamma,
             "SHD": shd
         })
