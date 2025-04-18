@@ -5,7 +5,7 @@ import pandas as pd
 
 data_disc = DiscreteData('data/discrete.dat')
 data_cont = ContinuousData('data/gaussian.dat')
-score_chosen = 'GaussianLL'
+score_chosen = 'DiscreteAIC'
 # POSSIBLE SCORES FOR ANALYSIS
 scores = {
     'DiscreteEBIC': DiscreteEBIC(data_disc),
@@ -22,10 +22,13 @@ skore = scores[score_chosen]
 
 results = []
 pruned = []
+#For bedugging if needed
+invalid_ubs = []
+
 
 # Load the local scores using GOBNILP
 m = Gobnilp()
-m.learn(data_source='data/gaussian.dat', data_type='continuous', score=score_chosen , end='local scores', palim=6, pruning=False)
+m.learn(data_source='data/discrete.dat', data_type='discrete', score=score_chosen , end='local scores', palim=6, pruning=False)
 # Load the pruned and unpruned score dictionaries
 all_scores = m.return_local_scores(skore.score, palim=6, pruning=False)
 kept_scores = m.return_local_scores(skore.score, palim=6, pruning=True)
@@ -49,6 +52,20 @@ for node, score_dict in m.local_scores.items():
                 "Superset Score": round(superset_score, 2),
                 "Valid Bound?": valid
             })
+            #Debugging
+            '''
+            if not valid:
+                invalid_ubs.append({
+                    "Node": node,
+                    "Parent Set": set(parent_set),
+                    "Superset": set(superset),
+                    "Upper Bound": ub,
+                    "Superset Score": superset_score,
+                    "Bound Gap": superset_score - ub,
+                    "Parent Score": score,  # current set's own score
+                    "Score Diff (superset-parent)": superset_score - score
+                })
+            '''
     # Identify pruned sets: all - kept
     pruned_sets = set(all_scores[node].keys()) - set(kept_scores[node].keys())
 
@@ -64,7 +81,7 @@ for node, score_dict in m.local_scores.items():
 
 df_results = pd.DataFrame(results)
 df_pruned = pd.DataFrame(pruned)
-
+df_invalid_ubs = pd.DataFrame(invalid_ubs)
 #Evaluation
 
 total_comparisons = len(results)
@@ -73,6 +90,8 @@ total_prunes = len(pruned)
 
 print(f"\nTotal comparisons made: {total_comparisons}")
 print(f"Invalid upper bounds found: {invalid_bounds}")
+
+#print(df_invalid_ubs.to_string(index=False))
 #Reduction in search space
 
 total_unpruned = sum(len(v) for v in kept_scores.values())  # From earlier
