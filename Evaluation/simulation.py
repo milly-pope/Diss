@@ -10,7 +10,7 @@ def reformat(samples, file):
         f.write(" ".join(map(str, arities)) + "\n")
         samples_new.to_csv(f, sep=" ", index=False, header=False)
 
-def generate_all_samples(bif_path, output_prefix, sample_sizes, num_files=5):
+def gen_samples(bif_path, output_prefix, sample_sizes, num_files=5):
     reader = BIFReader(bif_path)
     model = reader.get_model()
     sampler = BayesianModelSampling(model)
@@ -22,4 +22,4 @@ def generate_all_samples(bif_path, output_prefix, sample_sizes, num_files=5):
             reformat(data, filename)
 
 sample_sizes = [5000]
-generate_all_samples('alarm.bif', output_prefix='alarm', sample_sizes=sample_sizes)
+gen_samples('alarm.bif', output_prefix='alarm', sample_sizes=sample_sizes)

@@ -5,7 +5,7 @@ import pandas as pd
 
 data_disc = DiscreteData('data/discrete.dat')
 data_cont = ContinuousData('data/gaussian.dat')
-score_chosen = 'DiscreteAIC'
+score_chosen = 'DiscreteEBIC'
 # POSSIBLE SCORES FOR ANALYSIS
 scores = {
     'DiscreteEBIC': DiscreteEBIC(data_disc),
@@ -29,7 +29,7 @@ invalid_ubs = []
 # Load the local scores using GOBNILP
 m = Gobnilp()
 m.learn(data_source='data/discrete.dat', data_type='discrete', score=score_chosen , end='local scores', palim=6, pruning=False)
-# Load the pruned and unpruned score dictionaries
+# pruned and unpruned
 all_scores = m.return_local_scores(skore.score, palim=6, pruning=False)
 kept_scores = m.return_local_scores(skore.score, palim=6, pruning=True)
 # Loop through all nodes
@@ -37,7 +37,7 @@ for node, score_dict in m.local_scores.items():
 
     for parent_set in score_dict:
         proper_supersets = [ps for ps in score_dict if parent_set < ps]
-        # Get upper bound by recomputing score using your scoring class
+        # Recompute upper bound
         score, ub = skore.score(node, tuple(parent_set))
 
         for superset in proper_supersets:
@@ -66,7 +66,6 @@ for node, score_dict in m.local_scores.items():
                     "Score Diff (superset-parent)": superset_score - score
                 })
             '''
-    # Identify pruned sets: all - kept
     pruned_sets = set(all_scores[node].keys()) - set(kept_scores[node].keys())
 
     for pruned_set in pruned_sets:
@@ -91,10 +90,8 @@ total_prunes = len(pruned)
 print(f"\nTotal comparisons made: {total_comparisons}")
 print(f"Invalid upper bounds found: {invalid_bounds}")
 
-#print(df_invalid_ubs.to_string(index=False))
-#Reduction in search space
 
-total_unpruned = sum(len(v) for v in kept_scores.values())  # From earlier
+total_unpruned = sum(len(v) for v in kept_scores.values())
 total_possible = total_prunes + total_unpruned
 
 prune_percent = round((total_prunes / total_possible) * 100, 2)
